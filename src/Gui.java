@@ -102,6 +102,7 @@ public class Gui {
                 JButton addTaskButton = new JButton("Hinzufügen");
                 addTaskButton.setBounds(10, 385, 350, 50);
                 addTaskFrame.add(addTaskButton);
+                addTaskButton.addActionListener(a -> addTaskFrame.dispose());
 
                 addTaskButton.addActionListener(a -> {
                     String name = taskName.getText().trim();
