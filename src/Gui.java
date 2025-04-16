@@ -1,6 +1,9 @@
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.*;
+import java.util.ArrayList;
+
 
 public class Gui {
     public static void main(String[] args) {
@@ -23,16 +26,9 @@ public class Gui {
         // Beispiel-Daten
 
 
-        String[] items = {
-                "Eintrag 1", "Eintrag 2", "Eintrag 3",
-                "Eintrag 4", "Eintrag 5", "Eintrag 6",
-                "Eintrag 7", "Eintrag 8", "Eintrag 9",
-                "Eintrag 10", "Eintrag 11", "Eintrag 12"
-        };
+        DefaultListModel<String> listModel = loadTasks();
+        JList<String> list = new JList<>(listModel);
 
-
-        // Liste erstellen
-        JList<String> list = new JList<>(items);
 
         // Scrollbar hinzufügen
         JScrollPane scrollPane = new JScrollPane(list);
@@ -52,7 +48,7 @@ public class Gui {
                 infoFrame.setLayout(null);
 
                 // JTextArea mit Text erstellen
-                JTextArea info = new JTextArea("Du hast ausgewählt: " + selected);
+                JTextArea info = new JTextArea(loadDescription(selected));
                 info.setLineWrap(true);
                 info.setWrapStyleWord(true);
                 info.setEditable(false);
@@ -107,6 +103,20 @@ public class Gui {
                 addTaskButton.setBounds(10, 385, 350, 50);
                 addTaskFrame.add(addTaskButton);
 
+                addTaskButton.addActionListener(a -> {
+                    String name = taskName.getText().trim();
+                    String desc = taskDescription.getText().trim();
+                    if (!name.isEmpty()) {
+                        listModel.addElement(name);
+                        saveTask(name);
+                        saveDescription(name, desc);
+                        addTaskFrame.dispose();
+                    }
+                });
+
+
+
+
                 addTaskFrame.setLocationRelativeTo(frame);
                 addTaskFrame.setVisible(true);
             }
@@ -119,4 +129,49 @@ public class Gui {
 
 
     }
+
+    private static DefaultListModel<String> loadTasks() {
+        DefaultListModel<String> model = new DefaultListModel<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader("tasks.txt"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                model.addElement(line);
+            }
+        } catch (IOException e) {
+            System.out.println("Keine Aufgaben gefunden.");
+        }
+        return model;
+    }
+
+    private static void saveTask(String taskName) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("tasks.txt", true))) {
+            writer.write(taskName);
+            writer.newLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void saveDescription(String taskName, String description) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(taskName + ".txt"))) {
+            writer.write(description);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static String loadDescription(String taskName) {
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new FileReader(taskName + ".txt"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line).append("\n");
+            }
+        } catch (IOException e) {
+            sb.append("Keine Beschreibung gefunden.");
+        }
+        return sb.toString();
+    }
 }
+
+
