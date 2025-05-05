@@ -13,9 +13,9 @@ public class Gui {
         frame.setSize(600, 500);
         frame.setLayout(null);
 
-        JButton button = new JButton("Aufgabe löschen");
+        JButton button1 = new JButton("Aufgabe löschen");
 
-        button.setBounds(390, 360, 150, 50);
+        button1.setBounds(390, 360, 150, 50);
 
         JButton button2 = new JButton("Aufgabe hinzufügen");
 
@@ -37,37 +37,35 @@ public class Gui {
 
         // ScrollPane zum Fenster hinzufügen
         frame.add(scrollPane);
-        list.addListSelectionListener(e -> {
+        list.addMouseListener(new java.awt.event.MouseAdapter() {	//erkennt maus click
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) {						// anzahl der maus clicks
+                    int index = list.locationToIndex(e.getPoint());
+                    if (index != -1) {
+                        String selected = list.getModel().getElementAt(index);
 
-            if (!e.getValueIsAdjusting()) {
-                String selected = list.getSelectedValue();
+                        // Neues Fenster öffnen
+                        JFrame infoFrame = new JFrame("Info zu: " + selected);
+                        infoFrame.setSize(320, 350);
+                        infoFrame.setLayout(null);
 
-                // Neues Fenster öffnen
-                JFrame infoFrame = new JFrame("Info zu: " + selected);
-                infoFrame.setSize(320, 350);
-                infoFrame.setLayout(null);
+                        JTextArea info = new JTextArea(loadDescription(selected));
+                        info.setLineWrap(true);
+                        info.setWrapStyleWord(true);
+                        info.setEditable(false);
 
-                // JTextArea mit Text erstellen
-                JTextArea info = new JTextArea(loadDescription(selected));
-                info.setLineWrap(true);
-                info.setWrapStyleWord(true);
-                info.setEditable(false);
+                        JScrollPane scroll = new JScrollPane(info);
+                        scroll.setBounds(10, 30, 280, 250);
 
-                // JScrollPane erstellen und JTextArea hinzufügen
-                JScrollPane scroll = new JScrollPane(info);
-                scroll.setBounds(10, 30, 280, 250); // Position und Größe des Scrollpanes festlegen
+                        JLabel label = new JLabel(selected);
+                        label.setBounds(10, 5, 280, 20);
 
-                // JLabel hinzufügen
-                JLabel label = new JLabel(selected);
-                label.setBounds(10, 5, 280, 20);
-
-                // Komponenten zum Fenster hinzufügen
-                infoFrame.add(scroll);
-                infoFrame.add(label);
-
-                // Fenster positionieren und sichtbar machen
-                infoFrame.setLocationRelativeTo(frame);
-                infoFrame.setVisible(true);
+                        infoFrame.add(scroll);
+                        infoFrame.add(label);
+                        infoFrame.setLocationRelativeTo(frame);
+                        infoFrame.setVisible(true);
+                    }
+                }
             }
         });
 
@@ -122,13 +120,54 @@ public class Gui {
                 addTaskFrame.setVisible(true);
             }
         });
-        frame.add(button);
+        frame.add(button1);
         frame.add(button2);
 
         // Fenster sichtbar machen
         frame.setVisible(true);
 
+        // Task Löschen
+        button1.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int selectedIndex = list.getSelectedIndex();
+                if (selectedIndex != -1) {
+                    String taskName = listModel.getElementAt(selectedIndex);
 
+                    // Bestätigungsdialog anzeigen
+                    int confirm = JOptionPane.showConfirmDialog(
+                            null,
+                            "Aufgabe \"" + taskName + "\" wirklich löschen?",
+                            "Löschen bestätigen",
+                            JOptionPane.YES_NO_OPTION
+                    );
+
+                    // Wenn bestätigt:
+                    if (confirm == JOptionPane.YES_OPTION) {
+                        listModel.remove(selectedIndex); // Entfernt den Task
+
+                        // schreibt die tasks.txt neu
+                        ArrayList<String> remainingTasks = new ArrayList<>();
+                        for (int i = 0; i < listModel.size(); i++) {
+                            remainingTasks.add(listModel.getElementAt(i));
+                        }
+                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("tasks.txt"))) {
+                            for (String task : remainingTasks) {
+                                writer.write(task);
+                                writer.newLine();
+                            }
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                        }
+
+                        // löscht die beschreibung
+                        File descriptionFile = new File(taskName + ".txt");
+                        if (descriptionFile.exists()) {
+                            descriptionFile.delete();
+                        }
+                    }
+                }
+            }
+        });
     }
 
     private static DefaultListModel<String> loadTasks() {
